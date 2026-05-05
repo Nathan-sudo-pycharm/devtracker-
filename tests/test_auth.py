@@ -29,3 +29,23 @@ def test_login_wrong_password():
     })
     # Should return 401 Unauthorized
     assert response.status_code == 401
+
+def test_register_duplicate_email():
+    """Registering same email twice should fail"""
+    client.post("/auth/register", json={
+        "email": "duplicate@test.com",
+        "password": "pass123"
+    })
+    response = client.post("/auth/register", json={
+        "email": "duplicate@test.com",
+        "password": "pass123"
+    })
+    assert response.status_code == 400
+
+def test_register_invalid_email():
+    """Invalid email format should fail"""
+    response = client.post("/auth/register", json={
+        "email": "notanemail",
+        "password": "pass123"
+    })
+    assert response.status_code == 422
