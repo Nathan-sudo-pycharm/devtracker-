@@ -1,0 +1,60 @@
+# Name shown in GitHub Actions tab
+name: DevTracker CI
+
+# Trigger — run this on every push to main branch
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    # Use fresh Ubuntu machine on GitHub's servers
+    runs-on: ubuntu-latest
+
+    # Spin up a postgres container for tests
+    services:
+      db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: nathan
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: devtracker
+        ports:
+          - 5432:5432
+        # Wait until postgres is healthy before running tests
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Step 1 — checkout your code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2 — install Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      # Step 3 — install dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Step 4 — run migrations
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://nathan:secret@localhost:5432/devtracker
+          SECRET_KEY: testsecretkey
+        run: alembic upgrade head
+
+      # Step 5 — run tests
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://nathan:secret@localhost:5432/devtracker
+          SECRET_KEY: testsecretkey
+        run: pytest tests/ -v
