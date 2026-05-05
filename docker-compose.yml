@@ -1,0 +1,39 @@
+# Version of docker-compose syntax
+version: "3.8"
+
+services:
+  # First service — your FastAPI app
+  app:
+    # Build from Dockerfile in current directory
+    build: .
+    # Map port 8080 on your PC to port 8080 inside container
+    ports:
+      - "8080:8080"
+    # Environment variables passed into the container
+    environment:
+      - DATABASE_URL=postgresql://nathan:secret@db:5432/devtracker
+      - SECRET_KEY=${SECRET_KEY}
+    # Wait for postgres to be ready before starting app
+    depends_on:
+      - db
+    # Auto restart if app crashes
+    restart: always
+
+  # Second service — PostgreSQL database
+  db:
+    # Official postgres image
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=nathan
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=devtracker
+    # Save database data even if container stops
+    # Without this, all data is lost when container restarts
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+# Named volume — persists database data between restarts
+volumes:
+  postgres_data:
